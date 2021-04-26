@@ -156,6 +156,8 @@ bool g_trueColor = isTrueColorTerminal();
 #endif
 bool g_setBackgroundColor = false;
 
+bool g_characterMode = false;
+bool g_wordMode = false;
 
 bool strEqual(char const* a, char const* b) {
 	return strcmp(a, b) == 0;
@@ -318,7 +320,12 @@ void parseCommandLine(int argc, char** argv) {
 			printf("      Darken colors slightly for improved readability on light backgrounds\n\n");
 			printf("  -h,--help\n");
 			printf("      Display this message\n\n");
+			printf("  -c,--character-mode");
+			printf("      Change color on every character instead of on every line\n\n");
 
+			printf("  -w,--word-mode");
+			printf("      Change color on every word instead of on every line\n\n");
+			
 			printf("Examples:\n");
 			printf("  pridecat f - g          Output f's contents, then stdin, then g's contents.\n");
 			printf("  pridecat                Copy stdin to stdout, but with rainbows.\n");
@@ -342,6 +349,14 @@ void parseCommandLine(int argc, char** argv) {
 		}
 		else if (strEqual(argv[i], "-d") || strEqual(argv[i], "--darken")) {
 			g_colorAdjustment = colorAdjust::darken;
+		}
+		else if (strEqual(argv[i], "-c") || strEqual(argv[i], "--character-mode")) {
+		        g_wordMode = false;
+		        g_characterMode = true;
+		}
+		else if (strEqual(argv[i], "-w") || strEqual(argv[i], "--word-mode")) {
+		        g_wordMode = true;
+		        g_characterMode = false;
 		}
 		else if (strEqual(argv[i], "--")) {
 			finishedReadingFlags = true;
@@ -375,11 +390,11 @@ void abortHandler(int signo) {
 void catFile(FILE* fh) {
 	int c;
 	while ((c = getc(fh)) >= 0) {
-		if (c == '\n') {
+	        if (c == '\n' || (g_wordMode && c == ' ')) {
 			resetColor();
 		}
 		putc(c, stdout);
-		if (c == '\n') {
+		if (g_characterMode || c == '\n' || (g_wordMode && c == ' ')) {
 			g_currentRow++;
 			if (g_currentRow == g_colorQueue.size()) {
 				g_currentRow = 0;
